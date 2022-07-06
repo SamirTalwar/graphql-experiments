@@ -28,51 +28,41 @@ const consumeStream = (input: stream.Readable): Promise<string> =>
     input.on("error", reject);
   });
 
-const counterType = new gql.GraphQLObjectType({
-  name: "Counter",
-  fields: {
-    count: {
-      type: new gql.GraphQLNonNull(gql.GraphQLInt),
-    },
-  },
-});
+const schema = gql.buildSchema(`
+  type Counter {
+    count: Int!
+  }
 
-const schema = new gql.GraphQLSchema({
-  query: new gql.GraphQLObjectType({
-    name: "RootQueryType",
-    fields: {
-      counter: {
-        type: counterType,
-        resolve() {
-          return state;
-        },
-      },
-    },
-  }),
-  mutation: new gql.GraphQLObjectType({
-    name: "RootMutationType",
-    fields: {
-      increment: {
-        type: counterType,
-        args: { by: { type: gql.GraphQLInt } },
-        resolve(_, increment) {
-          if (increment.by != null && increment.by <= 0) {
-            throw new Error("Cannot increment by zero or a negative number.");
-          }
-          state.count += increment.by || 1;
-          return state;
-        },
-      },
-      reset: {
-        type: counterType,
-        resolve() {
-          state = initialState();
-          return state;
-        },
-      },
-    },
-  }),
-});
+  type Query {
+    counter: Counter
+  }
+
+  type Mutation {
+    increment(by: Int): Counter
+
+    reset: Counter
+  }
+`);
+
+const rootValue = {
+  counter() {
+    return state;
+  },
+
+  increment(args: { by: number | undefined }) {
+    const by = args.by || 1;
+    if (by <= 0) {
+      throw new Error("Cannot increment by zero or a negative number.");
+    }
+    state.count += by;
+    return state;
+  },
+
+  reset() {
+    state = initialState();
+    return state;
+  },
+};
 
 const router = new Router()
   .get("/", async (ctx) => {
@@ -86,7 +76,7 @@ const router = new Router()
       ctx.throw(400, "Must accept JSON.");
     }
     const source = await consumeStream(ctx.req);
-    ctx.body = await gql.graphql({ schema, source });
+    ctx.body = await gql.graphql({ schema, source, rootValue });
     ctx.set("Content-Type", "application/graphql+json; charset=utf-8");
   });
 
