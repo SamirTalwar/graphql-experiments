@@ -25,6 +25,7 @@
       devShells.default = with pkgs; mkShell {
         buildInputs = [
           nodejs
+          yarn
         ];
       };
     }
