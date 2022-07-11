@@ -66,6 +66,28 @@ const rootValue = {
   },
 };
 
+const validate = (
+  source: string
+): { document: gql.DocumentNode } | { errors: readonly any[] } => {
+  const schemaValidationErrors = gql.validateSchema(schema);
+  if (schemaValidationErrors.length > 0) {
+    return { errors: schemaValidationErrors };
+  }
+
+  let document;
+  try {
+    document = gql.parse(source);
+  } catch (syntaxError) {
+    return { errors: [syntaxError] };
+  }
+
+  const validationErrors = gql.validate(schema, document);
+  if (validationErrors.length > 0) {
+    return { errors: validationErrors };
+  }
+  return { document };
+};
+
 const router = new Router()
   .get("/", async (ctx) => {
     ctx.body = "Nothing to see here.";
@@ -74,12 +96,21 @@ const router = new Router()
     if (!ctx.request.is("application/graphql")) {
       ctx.throw(400, "Invalid MIME type.");
     }
-    if (!ctx.request.accepts("json")) {
+    if (!(ctx.request.accepts("graphql+json") || ctx.request.accepts("json"))) {
       ctx.throw(400, "Must accept JSON.");
     }
     const source = await consumeStream(ctx.req);
-    ctx.body = await gql.graphql({ schema, source, rootValue });
-    ctx.set("Content-Type", "application/graphql+json; charset=utf-8");
+    const validationResult = validate(source);
+    if ("errors" in validationResult) {
+      ctx.throw(400, validationResult);
+    } else {
+      ctx.body = await gql.execute({
+        schema,
+        document: validationResult.document,
+        rootValue,
+      });
+      ctx.set("Content-Type", "application/graphql+json; charset=utf-8");
+    }
   });
 
 new Koa().use(router.routes()).use(router.allowedMethods()).listen(port);
