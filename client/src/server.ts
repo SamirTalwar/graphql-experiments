@@ -4,8 +4,10 @@ export const root =
     throw new Error("No server URL provided.");
   })();
 
+export const graphqlEndpoint = `${root}/graphql`;
+
 export const graphql = <Response>(body: string): Promise<Response> =>
-  fetch(`${root}/graphql`, {
+  fetch(graphqlEndpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/graphql",

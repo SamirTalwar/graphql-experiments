@@ -5,18 +5,19 @@ import "./App.css";
 function App() {
   const [count, setCount] = useState(0);
   useEffect(() => {
-    counter
-      .query()
-      .then((data) => setCount(data.counter.count))
-      .catch(console.error);
+    (async () => {
+      const ws = await counter.subscribe();
+      ws.onmessage = (message) => {
+        setCount(JSON.parse(message.data).data.counter.count);
+      };
+      ws.send(`subscription { counter { count } }`);
+    })().catch(console.error);
   });
-  const increment = () =>
-    counter.increment().then((data) => setCount(data.increment.count));
 
   return (
     <div className="App">
       <h1>
-        <a href="#" onClick={increment}>
+        <a href="#" onClick={counter.increment}>
           🐮
         </a>
       </h1>
