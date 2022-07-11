@@ -23,6 +23,10 @@ Let's look at the costs and benefits of each solution.
   - Or there might be a library that looks good, but falls apart as things get
     more complicated
   - Or there's 7 possible options, leading to decision fatigue
+- Subscriptions are hard work to manage
+  - Partially because of WebSockets
+  - Partially because of retaining state
+  - Tracking who needs an update for what requires a lot of introspection
 - We have to implement all the GraphQL boilerplate ourselves
   - standard filters
   - pagination
