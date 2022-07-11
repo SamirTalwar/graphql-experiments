@@ -3,6 +3,8 @@ import Koa from "koa";
 import Router from "@koa/router";
 import * as gql from "graphql";
 
+const port = 8080;
+
 interface Counter {
   count: number;
 }
@@ -80,4 +82,6 @@ const router = new Router()
     ctx.set("Content-Type", "application/graphql+json; charset=utf-8");
   });
 
-new Koa().use(router.routes()).use(router.allowedMethods()).listen(8080);
+new Koa().use(router.routes()).use(router.allowedMethods()).listen(port);
+
+console.log(`Listening on http://localhost:${port}/`);
